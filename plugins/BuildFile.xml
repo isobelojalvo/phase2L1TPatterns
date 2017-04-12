@@ -1,0 +1,18 @@
+<use name="FWCore/Framework"/>
+<use name="FWCore/PluginManager"/>
+<use name="FWCore/ParameterSet"/>
+<use name="CommonTools/UtilAlgos"/>
+<use name="PhysicsTools/UtilAlgos"/>
+<use name="SimDataFormats/SLHC"/>
+<use name="DataFormats/EcalDigi"/>
+<use name="DataFormats/L1TrackTrigger"/>
+<use name="SLHCUpgradeSimulations/L1TrackTrigger"/>
+<use name="SLHCUpgradeSimulations/L1CaloTrigger"/>
+<use name="FastSimulation/CaloGeometryTools"/>
+<use name="DataFormats/JetReco"/>
+<use name="hepmc"/>
+<use name="root"/>
+<use name="SLHCUpgradeSimulations/phase2L1TPatterns"/>
+<library   file="*.cc" name="SLHCUpgradeSimulationsStudyPlugins">
+  <flags   EDM_PLUGIN="1"/>
+</library>
