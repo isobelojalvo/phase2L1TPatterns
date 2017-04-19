@@ -149,14 +149,17 @@ Phase2L1TPatternGenerator::analyze(const edm::Event& evt, const edm::EventSetup&
    std::cout<<"run: "<<run<<" lumi: "<< lumi <<" event: "<< event<<std::endl;
 
    
+   int iWord = 0;
    //create high pt track distribution
    if(l1Tracks.size()>0){
-     for(int i = 0; i < max_n_tracks && i < l1Tracks.size(); i++){
+     for(unsigned int i = 0; i < max_n_tracks && i < l1Tracks.size(); i++){
        TTTrack<Ref_PixelDigi_> l1Track = l1Tracks.at(i);
        double pt = l1Track.getMomentum().perp();
        double eta = l1Track.getMomentum().eta();
        double phi = l1Track.getMomentum().phi();
        printTrack(fin, phi, eta, pt);
+       iWord++;
+       if(iWord%10 == 0) fin << endl;
      }
    }
 
