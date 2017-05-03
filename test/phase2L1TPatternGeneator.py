@@ -26,18 +26,12 @@ process.source = cms.Source("PoolSource",
 # ---- Global Tag :
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'PH2_1K_FB_V3::All', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
-process.load('Configuration.Geometry.GeometryExtended2023TTIReco_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D4_cff')
+
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
-process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
-process.load('Geometry.TrackerGeometryBuilder.StackedTrackerGeometry_cfi')
-process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
-process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
-
-process.load('Configuration/StandardSequences/L1HwVal_cff')
 process.load('Configuration.StandardSequences.RawToDigi_cff')
-process.load("SLHCUpgradeSimulations.L1CaloTrigger.SLHCCaloTrigger_cff")
 
 # bug fix for missing HCAL TPs in MC RAW
 from SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff import HcalTPGCoderULUT
@@ -51,14 +45,6 @@ process.slhccalo = cms.Path( process.RawToDigi + process.valHcalTriggerPrimitive
 # to the current trigger
 process.load('Configuration.StandardSequences.L1Reco_cff')
 process.L1Reco = cms.Path( process.l1extraParticles )
-
-# producer for UCT2015 / Stage-1 trigger objects
-process.load("L1Trigger.UCT2015.emulationMC_cfi")
-process.load("L1Trigger.UCT2015.uctl1extraparticles_cfi")
-process.pUCT = cms.Path(
-    process.emulationSequence *
-    process.uct2015L1Extra
-)
 
 # --------------------------------------------------------------------------------------------
 #
@@ -111,33 +97,18 @@ process.pTracking = cms.Path( process.ElectronTrackingSequence )
 process.load("SLHCUpgradeSimulations.L1TrackTrigger.L1TkPrimaryVertexProducer_cfi")
 process.pL1TkPrimaryVertex = cms.Path( process.L1TkPrimaryVertex )
 
-
 ############################################################
-# pixel stuff, uncomment if needed
+# L1 tracking
 ############################################################
-# from ./SLHCUpgradeSimulations/L1TrackTrigger/test/L1TrackNtupleMaker_cfg.py
 
-#BeamSpotFromSim =cms.EDProducer("VtxSmeared")
-#process.pBeamSpot = cms.Path( process.BeamSpotFromSim )
-#
-## pixel additions
-#process.load('Configuration.StandardSequences.RawToDigi_cff')
-#process.load('Configuration.StandardSequences.Reconstruction_cff')
-#process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-#
-#
-#from RecoLocalTracker.SiPixelRecHits.SiPixelRecHits_cfi import *
-#process.siPixelRecHits = siPixelRecHits
-#
-#process.L1PixelTrackFit = cms.EDProducer("L1PixelTrackFit")
-#process.pixTrk = cms.Path(process.siPixelRecHits +  process.L1PixelTrackFit)
-#
-#process.pixRec = cms.Path(
-#    process.RawToDigi+
-#    process.siPixelRecHits
-#)
-#
-#process.raw2digi_step = cms.Path(process.RawToDigi)
+process.load("L1Trigger.TrackFindingTracklet.L1TrackletTracks_cff")
+
+# run only the tracking (no MC truth associators)
+process.TTTracks = cms.Path(process.L1TrackletTracks)
+
+# run the tracking AND MC truth associators)
+process.TTTracksWithTruth = cms.Path(process.L1TrackletTracksWithAssociators)
+
 
 
 
@@ -147,7 +118,8 @@ process.pL1TkPrimaryVertex = cms.Path( process.L1TkPrimaryVertex )
 
 process.demo = cms.EDAnalyzer('Phase2L1TPatternGenerator',
                               #L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigisLargerPhi","Level1TTTracks"),
-                              L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigis","Level1TTTracks"),
+                              L1TrackInputTag = cms.InputTag("TTTracksFromTracklet", "Level1TTTracks"),               ## TTTrack input
+                              #L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigis","Level1TTTracks"),
                               L1TrackPrimaryVertexTag = cms.InputTag("L1TkPrimaryVertex"),
                               ecalDigis = cms.InputTag("ecalDigis:EcalTriggerPrimitives"),
                               hcalDigis = cms.InputTag("valHcalTriggerPrimitiveDigis"),

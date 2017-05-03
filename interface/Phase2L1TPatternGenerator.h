@@ -1,5 +1,5 @@
 /* 
-   SLHCUpgradeSimulations/phase2L1TPatterns/interface/Phase2L1TPatternGenerator.h
+   L1Trigger/phase2L1TPatterns/interface/Phase2L1TPatternGenerator.h
 
  */
 
@@ -25,11 +25,20 @@
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-#include "SimDataFormats/SLHC/interface/StackedTrackerTypes.h"
+//track trigger data formats
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
-#include "DataFormats/L1TrackTrigger/interface/TTPixelTrack.h"
-#include "DataFormats/L1TrackTrigger/interface/L1TkPrimaryVertex.h"
-#include "SLHCUpgradeSimulations/L1TrackTrigger/interface/L1TkElectronTrackMatchAlgo.h"
+#include "DataFormats/L1TrackTrigger/interface/TTCluster.h"
+#include "DataFormats/L1TrackTrigger/interface/TTStub.h"
+#include "DataFormats/L1TrackTrigger/interface/TTTrack.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
+#include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
+#include "SimDataFormats/TrackingHit/interface/PSimHit.h"
+#include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
+#include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
+#include "SimTracker/TrackTriggerAssociation/interface/TTTrackAssociationMap.h"
+#include "Geometry/Records/interface/StackedTrackerGeometryRecord.h"
+
 
 #include "DataFormats/EcalDigi/interface/EcalDigiCollections.h"
 #include "DataFormats/EcalRecHit/interface/EcalRecHit.h"
@@ -51,7 +60,7 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
-#include "SLHCUpgradeSimulations/phase2L1TPatterns/interface/triggerGeometryTools.hh"
+#include "L1Trigger/phase2L1TPatterns/interface/triggerGeometryTools.hh"
 
 #include <fstream>
 
@@ -59,7 +68,7 @@ using namespace edm;
 using std::cout;
 using std::endl;
 using std::vector;
-
+using std::ofstream;
 //
 // class declaration
 //
@@ -91,7 +100,7 @@ class Phase2L1TPatternGenerator : public edm::EDAnalyzer {
 
       // ----------member data ---------------------------
 
-      typedef std::vector<TTTrack<Ref_PixelDigi_>> L1TkTrackCollectionType;
+      typedef std::vector<TTTrack< Ref_Phase2TrackerDigi_ >> L1TkTrackCollectionType;
       typedef vector<reco::GenParticle> GenParticleCollectionType;
 
       int run, lumi, event;
@@ -101,12 +110,13 @@ class Phase2L1TPatternGenerator : public edm::EDAnalyzer {
       std::ofstream logFile_;
       int patternNumber;
 
-      bool compareByPt_tracks (TTTrack<Ref_PixelDigi_> i,TTTrack<Ref_PixelDigi_> j) { 
+      bool compareByPt_tracks (TTTrack< Ref_Phase2TrackerDigi_ > i,TTTrack< Ref_Phase2TrackerDigi_ > j) { 
 	return(i.getMomentum().perp() > j.getMomentum().perp()); 
       };
       
       edm::EDGetTokenT<EcalTrigPrimDigiCollection> ecalSrc_; 
       edm::EDGetTokenT<HcalTrigPrimDigiCollection> hcalSrc_;
+      edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > ttTrackToken_;
       edm::InputTag L1TrackInputTag;
       edm::InputTag L1TrackPrimaryVertexTag;
 

@@ -3,7 +3,7 @@
 // Package:    Phase2L1TPatternGenerator
 // Class:      Phase2L1TPatternGenerator
 // 
-/**\class Phase2L1TPatternGenerator Phase2L1TPatternGenerator.cc SLHCUpgradeSimulations/Phase2L1TPatternGenerator/plugins/Phase2L1TPatternGenerator.cc
+/**\class Phase2L1TPatternGenerator Phase2L1TPatternGenerator.cc L1Trigger/Phase2L1TPatternGenerator/plugins/Phase2L1TPatternGenerator.cc
 
  Description: [one line class summary]
 
@@ -18,8 +18,8 @@
 //
 
 
-#include "SLHCUpgradeSimulations/phase2L1TPatterns/interface/Phase2L1TPatternGenerator.h"
-
+#include "L1Trigger/phase2L1TPatterns/interface/Phase2L1TPatternGenerator.h"
+#include <fstream>
 
 #define max_n_tracks 50
 
@@ -48,7 +48,8 @@ Phase2L1TPatternGenerator::Phase2L1TPatternGenerator(const edm::ParameterSet& cf
 
   L1TrackInputTag = cfg.getParameter<edm::InputTag>("L1TrackInputTag");
   L1TrackPrimaryVertexTag = cfg.getParameter<edm::InputTag>("L1TrackPrimaryVertexTag");
-   
+
+  ttTrackToken_ = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(L1TrackInputTag);   
    //now do what ever initialization is needed
 
   summaryCardOutputFileName_  = cfg.getUntrackedParameter<std::string>("summaryCardOutputFileName");
@@ -97,27 +98,31 @@ void
 Phase2L1TPatternGenerator::analyze(const edm::Event& evt, const edm::EventSetup& iSetup)
 {
   using namespace edm;
-   edm::Handle<L1TkTrackCollectionType> l1trackHandle;
-   evt.getByLabel(L1TrackInputTag, l1trackHandle);
-   std::vector<TTTrack<Ref_PixelDigi_> > l1Tracks;
+   std::vector<TTTrack< Ref_Phase2TrackerDigi_ > > l1Tracks;
 
-   // L1 Track based primary vertex
-   edm::Handle<L1TkPrimaryVertexCollection> l1PrimaryVertexHandle;
-   evt.getByLabel(L1TrackPrimaryVertexTag, l1PrimaryVertexHandle);
-
-   l1Tracks.clear();
-   //Find and sort the tracks
-   for(size_t track_index=0; track_index<l1trackHandle->size(); ++track_index)
-     {
-       edm::Ptr<TTTrack<Ref_PixelDigi_>> ptr(l1trackHandle, track_index);
-       double pt = ptr->getMomentum().perp();
+  // L1 tracks
+  edm::Handle< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > l1trackHandle;
+  evt.getByToken(ttTrackToken_, l1trackHandle);
+  
+  // L1 Track based primary vertex
+  //edm::Handle<L1TkPrimaryVertexCollection> l1PrimaryVertexHandle;
+  //evt.getByLabel(L1TrackPrimaryVertexTag, l1PrimaryVertexHandle);
+  
+  l1Tracks.clear();
+  //Find and sort the tracks
+  for(size_t track_index=0; track_index<l1trackHandle->size(); ++track_index)
+    {
+       //edm::Ptr<TTTrack<Ref_PixelDigi_>> ptr(l1trackHandle, track_index);
+       edm::Ptr< TTTrack< Ref_Phase2TrackerDigi_ > > ptr(l1trackHandle, track_index);
+       double pt  = ptr->getMomentum().perp();
        double eta = ptr->getMomentum().eta();
+
        //only using tracks with eta less than 1.5 and pt greater than 2.5 GeV
        if(abs(eta)<1.5 && pt > 2.5)
 	 l1Tracks.push_back(l1trackHandle->at(track_index));       
      }
 
-   std::sort(l1Tracks.begin(), l1Tracks.end(), [](TTTrack<Ref_PixelDigi_> i,TTTrack<Ref_PixelDigi_> j){return(i.getMomentum().perp() > j.getMomentum().perp());});   
+   std::sort(l1Tracks.begin(), l1Tracks.end(), [](TTTrack< Ref_Phase2TrackerDigi_ > i,TTTrack< Ref_Phase2TrackerDigi_ > j){return(i.getMomentum().perp() > j.getMomentum().perp());});   
 
    //decal ecal and hcal tpgs
    edm::Handle<EcalTrigPrimDigiCollection> ecalTPGs;
@@ -153,7 +158,7 @@ Phase2L1TPatternGenerator::analyze(const edm::Event& evt, const edm::EventSetup&
    //create high pt track distribution
    if(l1Tracks.size()>0){
      for(unsigned int i = 0; i < max_n_tracks && i < l1Tracks.size(); i++){
-       TTTrack<Ref_PixelDigi_> l1Track = l1Tracks.at(i);
+       TTTrack< Ref_Phase2TrackerDigi_ > l1Track = l1Tracks.at(i);
        double pt = l1Track.getMomentum().perp();
        double eta = l1Track.getMomentum().eta();
        double phi = l1Track.getMomentum().phi();

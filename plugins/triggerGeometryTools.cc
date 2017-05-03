@@ -1,4 +1,4 @@
-#include "SLHCUpgradeSimulations/phase2L1TPatterns/interface/triggerGeometryTools.hh"
+#include "L1Trigger/phase2L1TPatterns/interface/triggerGeometryTools.hh"
 
 triggerGeometryTools::triggerGeometryTools(){};
 
