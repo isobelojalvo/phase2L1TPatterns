@@ -54,21 +54,13 @@ process.L1Clusters = cms.Path(process.L1CaloClusterProducer)
 # Analyzer starts here
 
 process.patterns = cms.EDAnalyzer('Phase2L1TPatternGenerator',
-                              #L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigisLargerPhi","Level1TTTracks"),
-                              L1TrackInputTag = cms.InputTag("TTTracksFromTracklet", "Level1TTTracks"),               ## TTTrack input
-                              #L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigis","Level1TTTracks"),
-                              L1TrackPrimaryVertexTag = cms.InputTag("L1TkPrimaryVertex"),
-                              ecalDigis = cms.InputTag("ecalDigis:EcalTriggerPrimitives"),
-                              hcalDigis = cms.InputTag("valHcalTriggerPrimitiveDigis"),
-                              summaryCardInputFileName  = cms.untracked.string("inputPatterns.txt"),
-                              summaryCardOutputFileName = cms.untracked.string("outputPatterns.txt"),
-                              L1Clusters = cms.InputTag("L1CaloClusterProducer","L1Phase2CaloClusters")
-#vector<L1CaloCluster>      "L1CaloClusterProducer"   "L1Phase2CaloClusters"   "L1CaloClusters"
-                              #vertices = cms.InputTag("vertices"),
-                              #genParticles = cms.InputTag("genParticles"),
-                              #genMatchDeltaRcut = cms.untracked.double(0.25),
-                              #tauHcalPtCut = cms.untracked.double(-1),
-                              #tauEcalPtCut = cms.untracked.double(-1)
+                                  L1TrackInputTag = cms.InputTag("TTTracksFromTracklet", "Level1TTTracks"),               ## TTTrack input
+                                  L1TrackPrimaryVertexTag = cms.InputTag("L1TkPrimaryVertex"),
+                                  summaryCardInputFileName  = cms.untracked.string("inputPatterns.txt"),
+                                  summaryCardOutputFileName = cms.untracked.string("outputPatterns.txt"),
+                                  L1Clusters = cms.InputTag("L1CaloClusterProducer","L1Phase2CaloClusters"),
+                                  ecalTPGsBarrel = cms.InputTag("simEcalEBTriggerPrimitiveDigis","","HLT"),
+                                  hcalTPGs       = cms.InputTag("simHcalTriggerPrimitiveDigis","","HLT")
 )
 
 
