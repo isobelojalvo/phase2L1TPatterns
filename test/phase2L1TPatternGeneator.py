@@ -1,101 +1,35 @@
 import FWCore.ParameterSet.Config as cms
+import os
+process = cms.Process("patternGeneration")
 
-process = cms.Process("test")
 
+
+# import standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.load('Configuration.EventContent.EventContent_cff')
-process.MessageLogger.categories = cms.untracked.vstring('L1EGRateStudies', 'FwkReport')
-process.MessageLogger.cerr.FwkReport = cms.untracked.PSet(
-   reportEvery = cms.untracked.int32(10)
-)
+process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
+process.load('Configuration.Geometry.GeometryExtended2023D4_cff')
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
-
-process.source = cms.Source("PoolSource",
-   fileNames = cms.untracked.vstring(
-        'file:event8021-pi0.root'
-        #'file:badEvent.root'
-        #'file:/hdfs/store/mc/TTI2023Upg14D/TauThreeProngsEnriched/GEN-SIM-DIGI-RAW/PU140bx25_PH2_1K_FB_V3-v2/00000/062C6F7F-7FE3-E311-96B9-0025905A48C0.root'
-        #'file:/hdfs/store/mc/TTI2023Upg14D/SingleTauOneProngFlatPt10To100/GEN-SIM-DIGI-RAW/PU140bx25_PH2_1K_FB_V3-v2/00000/06ABA3EB-FCE6-E311-85A2-0026189438BD.root'
-        )
-)
-
-# All this stuff just runs the various EG algorithms that we are studying
-                         
-# ---- Global Tag :
+process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+# ---- Global Tag :
+
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 process.load('Configuration.Geometry.GeometryExtended2023D4_cff')
 
-process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
-process.load('Configuration.StandardSequences.RawToDigi_cff')
-
-# bug fix for missing HCAL TPs in MC RAW
-from SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff import HcalTPGCoderULUT
-HcalTPGCoderULUT.LUTGenerationMode = cms.bool(True)
-process.valRctDigis.hcalDigis             = cms.VInputTag(cms.InputTag('valHcalTriggerPrimitiveDigis'))
-process.L1CaloTowerProducer.HCALDigis =  cms.InputTag("valHcalTriggerPrimitiveDigis")
-
-process.slhccalo = cms.Path( process.RawToDigi + process.valHcalTriggerPrimitiveDigis+process.SLHCCaloTrigger)
-
-# run L1Reco to produce the L1EG objects corresponding
-# to the current trigger
-process.load('Configuration.StandardSequences.L1Reco_cff')
-process.L1Reco = cms.Path( process.l1extraParticles )
-
-# --------------------------------------------------------------------------------------------
-#
-# ----    Produce the L1EGCrystal clusters (code of Sasha Savin)
-
-# first you need the ECAL RecHIts :
-process.load('Configuration.StandardSequences.Reconstruction_cff')
-process.reconstruction_step = cms.Path( process.calolocalreco )
-
-process.L1EGammaCrystalsProducer = cms.EDProducer("L1EGCrystalClusterProducer",
-   EtminForStore = cms.double(0.),
-   debug = cms.untracked.bool(False),
-   useECalEndcap = cms.bool(True)
+# input
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.source = cms.Source("PoolSource",
+   fileNames = cms.untracked.vstring(
+        'file:singleE-gen-sim-raw.root'
+        #'file:event8021-pi0.root'
+        )
 )
-process.pSasha = cms.Path( process.L1EGammaCrystalsProducer )
 
-# --------------------------------------------------------------------------------------------
-#
-# ----  Match the L1EG stage-2 objects created by the SLHCCaloTrigger sequence above
-#	with the crystal-level clusters.
-#	This produces a new collection of L1EG objects, starting from the original
-#	L1EG collection. The eta and phi of the L1EG objects is corrected using the
-#	information of the xtal level clusters.
-
-process.l1ExtraCrystalProducer = cms.EDProducer("L1ExtraCrystalPosition",
-   eGammaSrc = cms.InputTag("SLHCL1ExtraParticles","EGamma"),
-   eClusterSrc = cms.InputTag("L1EGammaCrystalsProducer","EGCrystalCluster")
-)
-process.egcrystal_producer = cms.Path(process.l1ExtraCrystalProducer)
-
-
-# ----------------------------------------------------------------------------------------------
-# 
-# Do offline reconstruction step to get cluster pt
-
-process.load('RecoEcal.Configuration.RecoEcal_cff')
-process.ecalClusters = cms.Path(process.ecalClustersNoPFBox)
-
-
-# ---------------------------------------------------------------------------
-#
-# --- Create the collection of special tracks for electrons
-#
-
-process.load("SLHCUpgradeSimulations.L1TrackTrigger.L1TrackingSequence_cfi")
-process.pTracking = cms.Path( process.ElectronTrackingSequence )
-
-# --- Produce the L1TkPrimaryVertex
-
-process.load("SLHCUpgradeSimulations.L1TrackTrigger.L1TkPrimaryVertexProducer_cfi")
-process.pL1TkPrimaryVertex = cms.Path( process.L1TkPrimaryVertex )
 
 ############################################################
 # L1 tracking
@@ -110,13 +44,16 @@ process.TTTracks = cms.Path(process.L1TrackletTracks)
 process.TTTracksWithTruth = cms.Path(process.L1TrackletTracksWithAssociators)
 
 
+# L1 Cluster Producer
+process.load("L1Trigger.phase2Demonstrator.L1CaloClusterProducer_cff")
+process.L1Clusters = cms.Path(process.L1CaloClusterProducer)
 
 
 # ----------------------------------------------------------------------------------------------
 # 
 # Analyzer starts here
 
-process.demo = cms.EDAnalyzer('Phase2L1TPatternGenerator',
+process.patterns = cms.EDAnalyzer('Phase2L1TPatternGenerator',
                               #L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigisLargerPhi","Level1TTTracks"),
                               L1TrackInputTag = cms.InputTag("TTTracksFromTracklet", "Level1TTTracks"),               ## TTTrack input
                               #L1TrackInputTag = cms.InputTag("TTTracksFromPixelDigis","Level1TTTracks"),
@@ -125,6 +62,8 @@ process.demo = cms.EDAnalyzer('Phase2L1TPatternGenerator',
                               hcalDigis = cms.InputTag("valHcalTriggerPrimitiveDigis"),
                               summaryCardInputFileName  = cms.untracked.string("inputPatterns.txt"),
                               summaryCardOutputFileName = cms.untracked.string("outputPatterns.txt"),
+                              L1Clusters = cms.InputTag("L1CaloClusterProducer","L1Phase2CaloClusters")
+#vector<L1CaloCluster>      "L1CaloClusterProducer"   "L1Phase2CaloClusters"   "L1CaloClusters"
                               #vertices = cms.InputTag("vertices"),
                               #genParticles = cms.InputTag("genParticles"),
                               #genMatchDeltaRcut = cms.untracked.double(0.25),
@@ -133,4 +72,16 @@ process.demo = cms.EDAnalyzer('Phase2L1TPatternGenerator',
 )
 
 
-process.p = cms.Path(process.demo)
+# output module
+process.out = cms.OutputModule( "PoolOutputModule",
+                                fileName = cms.untracked.string("CaloClusters.root"),
+                                fastCloning = cms.untracked.bool( False ),
+                                outputCommands = cms.untracked.vstring('keep *',
+                                                                       #'keep *_*_L1Phase2CaloClusters_*', 
+                                                                       )
+)
+process.FEVToutput_step = cms.EndPath(process.out)
+
+process.p = cms.Path(process.patterns)
+
+process.schedule = cms.Schedule(process.TTTracksWithTruth,process.L1Clusters,process.p)

@@ -43,21 +43,26 @@ using std::setw;
 
 Phase2L1TPatternGenerator::Phase2L1TPatternGenerator(const edm::ParameterSet& cfg):
   ecalSrc_(consumes<EcalTrigPrimDigiCollection>(cfg.getParameter<edm::InputTag>("ecalDigis"))),
-  hcalSrc_(consumes<HcalTrigPrimDigiCollection>(cfg.getParameter<edm::InputTag>("hcalDigis")))
+  hcalSrc_(consumes<HcalTrigPrimDigiCollection>(cfg.getParameter<edm::InputTag>("hcalDigis"))),
+  L1ClustersToken_(consumes< L1CaloClusterCollection >(cfg.getParameter<edm::InputTag>("L1Clusters")))
 {
 
   L1TrackInputTag = cfg.getParameter<edm::InputTag>("L1TrackInputTag");
   L1TrackPrimaryVertexTag = cfg.getParameter<edm::InputTag>("L1TrackPrimaryVertexTag");
 
   ttTrackToken_ = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(L1TrackInputTag);   
+
    //now do what ever initialization is needed
 
   summaryCardOutputFileName_  = cfg.getUntrackedParameter<std::string>("summaryCardOutputFileName");
   summaryCardInputFileName_   = cfg.getUntrackedParameter<std::string>("summaryCardInputFileName");
-    
+ 
   fout.open(summaryCardOutputFileName_);
   fin.open(summaryCardInputFileName_);
-    
+
+  clustersInputFileName_  = "clustersInput.txt";
+  finCluster.open(clustersInputFileName_);
+
   std::cout<<"beginning job"<<endl;
   /*
   fout<<"#EG nonIso: 8 highest"<<endl;
@@ -98,6 +103,10 @@ void
 Phase2L1TPatternGenerator::analyze(const edm::Event& evt, const edm::EventSetup& iSetup)
 {
   using namespace edm;
+  edm::Handle< std::vector<L1CaloCluster> > l1CaloClusters;
+  evt.getByToken( L1ClustersToken_, l1CaloClusters);
+
+
    std::vector<TTTrack< Ref_Phase2TrackerDigi_ > > l1Tracks;
 
   // L1 tracks
@@ -174,6 +183,21 @@ Phase2L1TPatternGenerator::analyze(const edm::Event& evt, const edm::EventSetup&
      }
    }
    
+   iWord = 0;
+   for(unsigned i = 0; i < l1CaloClusters->size() ; i++){
+     L1CaloCluster cluster = l1CaloClusters->at(i);
+     //if(cluster.p4().Pt()>0)
+     std::cout<<"raw cluster "<<std::hex<<cluster.raw()<<std::endl;
+     double pt =  cluster.p4().Pt();
+     double eta = cluster.p4().Eta();
+     double phi = cluster.p4().Phi();
+     std::cout<<"pt "<<pt<<" eta "<<eta<<" phi "<<phi<<std::endl;
+     printCluster(finCluster, phi, eta, pt, cluster.raw());
+     iWord++;
+     if(iWord%10 == 0) finCluster << endl;
+     
+   }
+   
 
 }
 
@@ -191,7 +215,7 @@ Phase2L1TPatternGenerator::endJob()
 
   fout.close();
   fin.close();
-
+  finCluster.close();
 }
 
 /*
@@ -231,6 +255,43 @@ void Phase2L1TPatternGenerator::printTrack(ofstream &file, float phi, float eta,
   
 }
 
+
+/*
+ * 28 bit number
+ * |iphi
+ * |         |ieta sign
+ * |         | 
+ * |         ||ieta
+ * |         ||         |et
+ * 0000 0000 0000 0000 0000 0000 0000
+ */
+
+void Phase2L1TPatternGenerator::printCluster(ofstream &file, float phi, float eta, float et, uint32_t raw ){
+  triggerGeometryTools trigTools;
+  uint32_t et_int  = round(et*10); 
+  uint32_t eta_uint = trigTools.getCrystalIEta(eta); 
+  uint32_t phi_uint = trigTools.getCrystalIPhi(phi); 
+  
+  if(et>200)
+    et_int = 0x7FF;
+  if(et > 0x7FF){
+    std::cout<<"you are trying to print a track with pt value greater than 0xFFF, something is wrong."<<std::endl;
+  }
+
+  uint32_t etaSign = 0;
+  if(eta/abs(eta)>0)
+    etaSign = 1;
+  else
+    etaSign = 0;
+
+  uint32_t printNumber = 0;
+  printNumber += et_int&0x7FF;
+  printNumber += ((eta_uint&0x7F)<<11);
+  printNumber += (etaSign<<19);
+  printNumber += ((phi_uint&0xFF)<<20);
+  file<<std::hex<<setfill('0') << setw(8)<<printNumber<<" ";
+  
+}
 
 void Phase2L1TPatternGenerator::printEGTau(ofstream &file, uint32_t iso, uint32_t phi, uint32_t etaSign, uint32_t eta, uint32_t et ){
   uint32_t printNumber = 0;

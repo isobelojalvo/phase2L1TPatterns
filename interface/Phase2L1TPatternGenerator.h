@@ -61,6 +61,7 @@
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "L1Trigger/phase2L1TPatterns/interface/triggerGeometryTools.hh"
+#include "DataFormats/L1CaloTrigger/interface/L1CaloCollections.h"
 
 #include <fstream>
 
@@ -86,6 +87,7 @@ class Phase2L1TPatternGenerator : public edm::EDAnalyzer {
       void printJet(ofstream &file, uint32_t phi, uint32_t etaSign, uint32_t eta, uint32_t et );
       void printSum(ofstream &file, uint32_t phi, uint32_t et );
       void printTrack(ofstream &file, float phi, float eta, float et );
+      void printCluster(ofstream &file, float phi, float eta, float et, uint32_t raw );
    private:
       virtual void beginJob() override;
       virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
@@ -117,13 +119,16 @@ class Phase2L1TPatternGenerator : public edm::EDAnalyzer {
       edm::EDGetTokenT<EcalTrigPrimDigiCollection> ecalSrc_; 
       edm::EDGetTokenT<HcalTrigPrimDigiCollection> hcalSrc_;
       edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > ttTrackToken_;
+      edm::EDGetTokenT<L1CaloClusterCollection> L1ClustersToken_;
       edm::InputTag L1TrackInputTag;
       edm::InputTag L1TrackPrimaryVertexTag;
 
       ofstream fin;
       ofstream fout;
+      ofstream finCluster;
       std::string summaryCardOutputFileName_;
       std::string summaryCardInputFileName_;
+      std::string clustersInputFileName_;
       double recoPt_;
 };
 
